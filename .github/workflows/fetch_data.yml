@@ -1,0 +1,37 @@
+name: Fetch Grid Data
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # runs at the top of every hour (UTC time)
+  workflow_dispatch:        # lets us trigger it manually from GitHub's website too
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # allows this job to commit the updated data back to your repo
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pandas
+
+      - name: Run the data-fetching script
+        env:
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+        run: python fetch_data.py
+
+      - name: Commit and push updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add grid_data.db
+          git commit -m "Automated data update" || echo "No changes to commit"
+          git push
